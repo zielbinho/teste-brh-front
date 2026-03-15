@@ -1,8 +1,10 @@
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { api } from "@/services/api";
+import { io } from "socket.io-client";
 
 // mock
 type Patient = {
@@ -38,6 +40,7 @@ const fetchPatients = async (): Promise<Patient[]> => {
 
 export function Dashboard() {
   const navigate = useNavigate();
+  const [notification, setNotification] = useState<string | null>(null);
 
   const {
     data: patients,
@@ -49,6 +52,30 @@ export function Dashboard() {
     queryFn: fetchPatients,
     staleTime: 1000 * 60 * 5,
   });
+
+  useEffect(() => {
+    const socket = io(import.meta.env.VITE_API_URL, {
+      auth: {
+        token: localStorage.getItem("accessToken"),
+      },
+    });
+
+    socket.on("nova_consulta", (mensagem) => {
+      setNotification(mensagem);
+      setTimeout(() => setNotification(null), 5000);
+    });
+
+    // mock a cada 15 seg
+    const interval = setInterval(() => {
+      setNotification("Nova consulta agendada!");
+      setTimeout(() => setNotification(null), 5000);
+    }, 15000);
+
+    return () => {
+      socket.disconnect();
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -92,14 +119,28 @@ export function Dashboard() {
     doc.save("lista_de_pacientes.pdf");
   };
 
-return (
+  return (
     <div className="min-h-screen bg-slate-50 p-8">
+      {/* notification mock real-time */}
+      {notification && (
+        <div className="fixed bottom-8 right-8 z-50 flex items-center gap-3 rounded-lg bg-slate-900 px-6 py-4 text-white shadow-xl animate-bounce">
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+          </span>
+          <p className="font-medium">{notification}</p>
+        </div>
+      )}
       <div className="mx-auto max-w-4xl">
         {/* Cabeçalho Atualizado com o novo botão */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Painel de Consultas</h1>
-            <p className="text-slate-500">Bem-vindo, Doutor(a). Aqui está sua agenda de hoje.</p>
+            <h1 className="text-3xl font-bold text-slate-900">
+              Painel de Consultas
+            </h1>
+            <p className="text-slate-500">
+              Bem-vindo, Doutor(a). Aqui está sua agenda de hoje.
+            </p>
           </div>
           <div className="flex gap-4">
             {!isLoading && !isError && patients && (
