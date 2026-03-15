@@ -8,7 +8,7 @@ import { Register } from "./pages/Register";
 function App() {
   return (
     <BrowserRouter>
-      <Toaster position="top-right" richColors />
+      <Toaster position="top-right" richColors closeButton />
       
       <Routes>
         {/* public */}

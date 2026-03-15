@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import jsPDF from "jspdf";
@@ -6,82 +6,81 @@ import autoTable from "jspdf-autotable";
 import { api } from "@/services/api";
 import { io } from "socket.io-client";
 import { toast } from "sonner";
-import {
-  Calendar,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  LogOut,
-  FileDown,
-  Activity,
-  AlertCircle,
-} from "lucide-react";
+import { Calendar, Clock, LogOut, Download, Activity, Loader2, Users, Phone, Mail } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-// mock
-type Patient = {
+// --- TIPAGENS ---
+type Consulta = {
   id: string;
   name: string;
   time: string;
   status: "Confirmado" | "Pendente" | "Cancelado";
 };
 
-// mock
-const fetchPatients = async (): Promise<Patient[]> => {
-  await new Promise((resolve) => setTimeout(resolve, 1500));
+type Paciente = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  lastVisit: string;
+};
 
-  // throw new Error("Falha ao conectar com o servidor da clínica.");
-
+// --- FUNÇÕES DE MOCK ---
+const fetchConsultas = async (): Promise<Consulta[]> => {
+  await new Promise((resolve) => setTimeout(resolve, 800));
   return [
-    {
-      id: "1",
-      name: "Ana Beatriz Machado",
-      time: "09:00",
-      status: "Confirmado",
-    },
-    {
-      id: "2",
-      name: "Carlos Eduardo Santos",
-      time: "10:30",
-      status: "Pendente",
-    },
+    { id: "1", name: "Ana Beatriz Machado", time: "09:00", status: "Confirmado" },
+    { id: "2", name: "Carlos Eduardo Santos", time: "10:30", status: "Pendente" },
     { id: "3", name: "Roberto Alves", time: "11:00", status: "Cancelado" },
     { id: "4", name: "Mariana Costa", time: "14:00", status: "Confirmado" },
   ];
 };
 
+const fetchPacientes = async (): Promise<Paciente[]> => {
+  await new Promise((resolve) => setTimeout(resolve, 800));
+  return [
+    { id: "1", name: "Ana Beatriz Machado", email: "ana.beatriz@email.com", phone: "(11) 98765-4321", lastVisit: "10/03/2026" },
+    { id: "2", name: "Carlos Eduardo Santos", email: "carlos.ed@email.com", phone: "(11) 91234-5678", lastVisit: "12/03/2026" },
+    { id: "3", name: "Roberto Alves", email: "roberto.alves@email.com", phone: "(11) 99988-7766", lastVisit: "05/02/2026" },
+    { id: "4", name: "Mariana Costa", email: "mari.costa@email.com", phone: "(11) 97766-5544", lastVisit: "15/03/2026" },
+  ];
+};
+
 export function Dashboard() {
   const navigate = useNavigate();
+  const userName = localStorage.getItem("userName") || "Doutor(a)";
+  
+  // Estado para controlar a aba ativa
+  const [activeTab, setActiveTab] = useState<"consultas" | "pacientes">("consultas");
 
-  const {
-    data: patients,
-    isLoading,
-    isError,
-    error,
-  } = useQuery({
-    queryKey: ["patients-list"],
-    queryFn: fetchPatients,
+  // Queries separadas (O React Query faz o cache das duas de forma independente!)
+  const { data: consultas, isLoading: loadingConsultas } = useQuery({
+    queryKey: ["consultas-list"],
+    queryFn: fetchConsultas,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const { data: pacientes, isLoading: loadingPacientes } = useQuery({
+    queryKey: ["pacientes-list"],
+    queryFn: fetchPacientes,
     staleTime: 1000 * 60 * 5,
   });
 
   useEffect(() => {
     const socket = io(import.meta.env.VITE_API_URL, {
-      auth: {
-        token: localStorage.getItem("accessToken"),
-      },
+      auth: { token: localStorage.getItem("accessToken") },
     });
 
     socket.on("nova_consulta", (mensagem) => {
-      toast.info(mensagem, {
-        icon: <Calendar className="w-4 h-4" />,
-      });
+      toast(mensagem, { icon: <Calendar className="w-4 h-4 text-blue-500" /> });
     });
 
-    // mock a cada 15 seg (mantido)
     const interval = setInterval(() => {
-      toast.info("Nova consulta agendada!", {
-        icon: <Calendar className="w-4 h-4" />,
+      toast("Nova consulta agendada!", {
+        description: "Um novo horário foi adicionado à sua agenda.",
+        icon: <Calendar className="w-4 h-4 text-blue-500" />,
       });
-    }, 15000);
+    }, 20000);
 
     return () => {
       socket.disconnect();
@@ -90,185 +89,196 @@ export function Dashboard() {
   }, []);
 
   const handleLogout = async () => {
-    try {
-      await api.post("/api/auth/logout");
-    } catch (error) {
-      console.error("Erro no logout", error);
-    } finally {
+    try { await api.post("/api/auth/logout"); } 
+    catch (error) { console.error("Erro no logout", error); } 
+    finally {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
-      toast.success("Você saiu do sistema.");
+      localStorage.removeItem("userName");
       navigate("/login");
     }
   };
 
+  // Exportação inteligente baseada na aba ativa
   const exportToPDF = () => {
-    if (!patients || patients.length === 0) return;
     const doc = new jsPDF();
-    doc.setFontSize(18);
-    doc.text("Agenda Médica", 14, 22);
+    doc.setFontSize(16);
 
-    doc.setFontSize(11);
-    doc.setTextColor(100);
-    doc.text(`Gerado em: ${new Date().toLocaleDateString("pt-BR")}`, 14, 30);
-
-    const tableColumn = ["Paciente", "Horário", "Status"];
-    const tableRows = patients.map((patient) => [
-      patient.name,
-      patient.time,
-      patient.status,
-    ]);
-
-    autoTable(doc, {
-      startY: 30,
-      head: [tableColumn],
-      body: tableRows,
-      theme: "grid",
-      headStyles: { fillColor: [15, 23, 42] },
-    });
-
-    doc.save("lista_de_pacientes.pdf");
-    toast.success("PDF gerado com sucesso!");
+    if (activeTab === "consultas" && consultas) {
+      doc.text("Agenda de Consultas", 14, 20);
+      autoTable(doc, {
+        startY: 30,
+        head: [["Paciente", "Horário", "Estado"]],
+        body: consultas.map((c) => [c.name, c.time, c.status]),
+        theme: "plain",
+        headStyles: { textColor: [100, 116, 139], fontStyle: "bold" },
+      });
+      doc.save("consultas.pdf");
+      toast.success("Lista de consultas exportada!");
+    } else if (activeTab === "pacientes" && pacientes) {
+      doc.text("Diretório de Pacientes", 14, 20);
+      autoTable(doc, {
+        startY: 30,
+        head: [["Nome", "E-mail", "Telefone", "Última Visita"]],
+        body: pacientes.map((p) => [p.name, p.email, p.phone, p.lastVisit]),
+        theme: "plain",
+        headStyles: { textColor: [100, 116, 139], fontStyle: "bold" },
+      });
+      doc.save("pacientes.pdf");
+      toast.success("Diretório de pacientes exportado!");
+    }
   };
 
-  const renderStatus = (status: Patient["status"]) => {
-    const statusConfig = {
-      Confirmado: {
-        color: "bg-emerald-100 text-emerald-700 border-emerald-200",
-        icon: <CheckCircle2 className="w-3.5 h-3.5 mr-1" />,
-      },
-      Pendente: {
-        color: "bg-amber-100 text-amber-700 border-amber-200",
-        icon: <Clock className="w-3.5 h-3.5 mr-1" />,
-      },
-      Cancelado: {
-        color: "bg-rose-100 text-rose-700 border-rose-200",
-        icon: <XCircle className="w-3.5 h-3.5 mr-1" />,
-      },
-    };
-
-    const config = statusConfig[status];
-    return (
-      <span
-        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${config.color}`}
-      >
-        {config.icon}
-        {status}
-      </span>
-    );
-  };
+  const isLoading = activeTab === "consultas" ? loadingConsultas : loadingPacientes;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8">
+    <div className="min-h-screen bg-slate-50/50 p-6 md:p-12 font-sans text-slate-900">
       <div className="mx-auto max-w-5xl">
-        {/* Cabeçalho Moderno */}
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+        
+        {/* Cabeçalho Principal */}
+        <header className="mb-8 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-blue-600">
               <Activity className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-                Painel de Consultas
-              </h1>
-              <p className="text-sm text-slate-500 font-medium">
-                Gerencie sua agenda diária.
-              </p>
+              <h1 className="text-2xl font-semibold tracking-tight">Olá, {userName}</h1>
+              <p className="text-sm text-slate-500">Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
             </div>
           </div>
-
-          <div className="flex items-center gap-3">
-            {!isLoading && !isError && patients && (
-              <button
-                onClick={exportToPDF}
-                className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow transition-colors hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
-              >
-                <FileDown className="mr-2 h-4 w-4" />
-                Exportar PDF
-              </button>
-            )}
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
-            >
-              <LogOut className="mr-2 h-4 w-4 text-slate-500" />
+          
+          <div className="flex gap-3">
+            <button onClick={exportToPDF} className="group flex items-center justify-center rounded-xl bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-[0_2px_10px_rgb(0,0,0,0.04)] transition-all hover:bg-slate-50 hover:text-slate-900 active:scale-95 cursor-pointer">
+              <Download className="mr-2 h-4 w-4 text-slate-400 group-hover:text-slate-600" />
+              Exportar para PDF
+            </button>
+            <button onClick={handleLogout} className="group flex items-center justify-center rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white shadow-[0_4px_14px_0_rgb(15,23,42,0.2)] transition-all hover:bg-slate-800 hover:shadow-[0_6px_20px_rgba(15,23,42,0.23)] active:scale-95 cursor-pointer">
+              <LogOut className="mr-2 h-4 w-4 opacity-70" />
               Sair
             </button>
           </div>
+        </header>
+
+        {/* Sistema de Abas (Tabs) */}
+        <div className="mb-8 inline-flex rounded-2xl bg-white p-1.5 shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-slate-100">
+          <button
+            onClick={() => setActiveTab("consultas")}
+            className={cn(
+              "flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium transition-all cursor-pointer",
+              activeTab === "consultas" ? "bg-slate-900 text-white shadow-md" : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+            )}
+          >
+            <Calendar className="h-4 w-4" />
+            Consultas
+          </button>
+          <button
+            onClick={() => setActiveTab("pacientes")}
+            className={cn(
+              "flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium transition-all cursor-pointer",
+              activeTab === "pacientes" ? "bg-slate-900 text-white shadow-md" : "text-slate-500 hover:text-slate-900 hover:bg-slate-50"
+            )}
+          >
+            <Users className="h-4 w-4" />
+            Pacientes
+          </button>
         </div>
 
-        {/* Estados */}
-        {isLoading && (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white py-20 shadow-sm">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-100 border-t-blue-600 mb-4"></div>
-            <p className="text-slate-500 font-medium animate-pulse">
-              Carregando prontuários...
-            </p>
-          </div>
-        )}
-
-        {isError && (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 py-16 text-center shadow-sm">
-            <AlertCircle className="h-10 w-10 text-rose-500 mb-3" />
-            <h3 className="font-bold text-lg text-rose-900">
-              Falha na conexão
-            </h3>
-            <p className="text-rose-600 mt-1">
-              {error instanceof Error ? error.message : "Erro desconhecido."}
-            </p>
-          </div>
-        )}
-
-        {/* Tabela Polida */}
-        {!isLoading && !isError && patients && (
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="bg-slate-50/80 uppercase text-slate-500 border-b border-slate-200">
-                  <tr>
-                    <th className="px-6 py-4 font-semibold tracking-wider">
-                      Paciente
-                    </th>
-                    <th className="px-6 py-4 font-semibold tracking-wider">
-                      Horário
-                    </th>
-                    <th className="px-6 py-4 font-semibold tracking-wider">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {patients.map((patient) => (
-                    <tr
-                      key={patient.id}
-                      className="hover:bg-slate-50/80 transition-colors group"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs">
-                            {patient.name.charAt(0)}
-                          </div>
-                          <span className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
-                            {patient.name}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-slate-600 font-medium">
-                        <div className="flex items-center">
-                          <Clock className="w-4 h-4 mr-2 text-slate-400" />
-                          {patient.time}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {renderStatus(patient.status)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        {/* Área de Conteúdo Central */}
+        <main>
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-32 opacity-60">
+              <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="rounded-[2rem] bg-white p-2 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+              <div className="overflow-x-auto rounded-[1.5rem]">
+                <table className="w-full text-left text-sm">
+                  
+                  {/* Cabeçalhos dinâmicos dependendo da aba */}
+                  <thead>
+                    <tr className="border-b border-slate-100">
+                      <th className="px-6 py-5 font-medium text-slate-400">Paciente</th>
+                      {activeTab === "consultas" ? (
+                        <>
+                          <th className="px-6 py-5 font-medium text-slate-400">Horário</th>
+                          <th className="px-6 py-5 font-medium text-slate-400 text-right">Estado</th>
+                        </>
+                      ) : (
+                        <>
+                          <th className="px-6 py-5 font-medium text-slate-400">Contactos</th>
+                          <th className="px-6 py-5 font-medium text-slate-400 text-right">Última Visita</th>
+                        </>
+                      )}
+                    </tr>
+                  </thead>
+
+                  {/* Corpo da tabela dinâmico */}
+                  <tbody className="divide-y divide-slate-50">
+                    
+                    {/* Renderização da Aba: CONSULTAS */}
+                    {activeTab === "consultas" && consultas?.map((consulta) => (
+                      <tr key={consulta.id} className="transition-colors hover:bg-slate-50/50">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-4">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
+                              {consulta.name.charAt(0)}
+                            </div>
+                            <span className="font-medium text-slate-900">{consulta.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center text-slate-500">
+                            <Clock className="mr-2 h-4 w-4 opacity-50" />
+                            {consulta.time}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span className={cn(
+                            "inline-flex items-center rounded-full px-3 py-1 text-xs font-medium",
+                            consulta.status === "Confirmado" && "bg-emerald-50 text-emerald-600",
+                            consulta.status === "Pendente" && "bg-amber-50 text-amber-600",
+                            consulta.status === "Cancelado" && "bg-slate-100 text-slate-500"
+                          )}>
+                            {consulta.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+
+                    {/* Renderização da Aba: PACIENTES */}
+                    {activeTab === "pacientes" && pacientes?.map((paciente) => (
+                      <tr key={paciente.id} className="transition-colors hover:bg-slate-50/50">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-4">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-xs font-semibold text-blue-600">
+                              {paciente.name.charAt(0)}
+                            </div>
+                            <span className="font-medium text-slate-900">{paciente.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col gap-1 text-slate-500">
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-3.5 w-3.5 opacity-50" /> {paciente.email}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-3.5 w-3.5 opacity-50" /> {paciente.phone}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right font-medium text-slate-600">
+                          {paciente.lastVisit}
+                        </td>
+                      </tr>
+                    ))}
+
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </main>
+
       </div>
     </div>
   );
