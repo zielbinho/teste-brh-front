@@ -51,7 +51,6 @@ const fetchPatients = async (): Promise<Patient[]> => {
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const [notification, setNotification] = useState<string | null>(null);
 
   const {
     data: patients,
@@ -72,11 +71,12 @@ export function Dashboard() {
     });
 
     socket.on("nova_consulta", (mensagem) => {
-      setNotification(mensagem);
-      setTimeout(() => setNotification(null), 5000);
+      toast.info(mensagem, {
+        icon: <Calendar className="w-4 h-4" />,
+      });
     });
 
-    // mock a cada 15 seg
+    // mock a cada 15 seg (mantido)
     const interval = setInterval(() => {
       toast.info("Nova consulta agendada!", {
         icon: <Calendar className="w-4 h-4" />,
