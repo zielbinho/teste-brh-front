@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { Calendar, Clock, LogOut, Download, Activity, Loader2, Users, Phone, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// --- TIPAGENS ---
+// mock
 type Consulta = {
   id: string;
   name: string;
@@ -25,7 +25,7 @@ type Paciente = {
   lastVisit: string;
 };
 
-// --- FUNÇÕES DE MOCK ---
+// mock
 const fetchConsultas = async (): Promise<Consulta[]> => {
   await new Promise((resolve) => setTimeout(resolve, 800));
   return [
@@ -49,11 +49,9 @@ const fetchPacientes = async (): Promise<Paciente[]> => {
 export function Dashboard() {
   const navigate = useNavigate();
   const userName = localStorage.getItem("userName") || "Doutor(a)";
-  
-  // Estado para controlar a aba ativa
+
   const [activeTab, setActiveTab] = useState<"consultas" | "pacientes">("consultas");
 
-  // Queries separadas (O React Query faz o cache das duas de forma independente!)
   const { data: consultas, isLoading: loadingConsultas } = useQuery({
     queryKey: ["consultas-list"],
     queryFn: fetchConsultas,
@@ -99,7 +97,6 @@ export function Dashboard() {
     }
   };
 
-  // Exportação inteligente baseada na aba ativa
   const exportToPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(16);
@@ -134,8 +131,6 @@ export function Dashboard() {
   return (
     <div className="min-h-screen bg-slate-50/50 p-6 md:p-12 font-sans text-slate-900">
       <div className="mx-auto max-w-5xl">
-        
-        {/* Cabeçalho Principal */}
         <header className="mb-8 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-blue-600">
@@ -159,7 +154,6 @@ export function Dashboard() {
           </div>
         </header>
 
-        {/* Sistema de Abas (Tabs) */}
         <div className="mb-8 inline-flex rounded-2xl bg-white p-1.5 shadow-[0_2px_10px_rgb(0,0,0,0.02)] border border-slate-100">
           <button
             onClick={() => setActiveTab("consultas")}
@@ -183,7 +177,6 @@ export function Dashboard() {
           </button>
         </div>
 
-        {/* Área de Conteúdo Central */}
         <main>
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-32 opacity-60">
@@ -193,8 +186,7 @@ export function Dashboard() {
             <div className="rounded-[2rem] bg-white p-2 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
               <div className="overflow-x-auto rounded-[1.5rem]">
                 <table className="w-full text-left text-sm">
-                  
-                  {/* Cabeçalhos dinâmicos dependendo da aba */}
+
                   <thead>
                     <tr className="border-b border-slate-100">
                       <th className="px-6 py-5 font-medium text-slate-400">Paciente</th>
@@ -212,10 +204,8 @@ export function Dashboard() {
                     </tr>
                   </thead>
 
-                  {/* Corpo da tabela dinâmico */}
                   <tbody className="divide-y divide-slate-50">
-                    
-                    {/* Renderização da Aba: CONSULTAS */}
+
                     {activeTab === "consultas" && consultas?.map((consulta) => (
                       <tr key={consulta.id} className="transition-colors hover:bg-slate-50/50">
                         <td className="px-6 py-4">
@@ -245,7 +235,6 @@ export function Dashboard() {
                       </tr>
                     ))}
 
-                    {/* Renderização da Aba: PACIENTES */}
                     {activeTab === "pacientes" && pacientes?.map((paciente) => (
                       <tr key={paciente.id} className="transition-colors hover:bg-slate-50/50">
                         <td className="px-6 py-4">

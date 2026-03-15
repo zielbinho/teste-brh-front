@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 const loginSchema = z.object({
   email: z.string().min(1, "O e-mail é obrigatório").regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, "Introduza um e-mail válido"),
-  password: z.string().min(6, "A palavra-passe deve ter no mínimo 6 caracteres"),
+  password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres"),
 });
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
@@ -76,9 +76,6 @@ export function Login() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-semibold text-slate-700">Senha</label>
-                {/* <a href="#" className="text-sm font-medium text-blue-600 hover:text-blue-500">
-                  Esqueceu a senha?
-                </a> */}
               </div>
               <input
                 type="password"

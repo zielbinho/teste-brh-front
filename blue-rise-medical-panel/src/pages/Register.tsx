@@ -43,25 +43,18 @@ export function Register() {
 
   return (
     <div className="flex min-h-screen w-full font-sans text-slate-900">
-      
-      {/* LADO ESQUERDO: Branding e Visual (Visível apenas em ecrãs lg+) */}
-      {/* Como está em primeiro lugar no código, o Tailwind vai colocá-lo à esquerda naturalmente */}
       <div className="hidden lg:relative lg:flex lg:w-1/2 lg:flex-col lg:items-center lg:justify-center lg:bg-slate-900 lg:p-12">
-        {/* Fundo de padrão / Gradiente invertido para dar dinâmica */}
         <div className="absolute inset-0 bg-gradient-to-tr from-blue-900 via-slate-800 to-slate-900 opacity-90"></div>
-        
         <div className="relative z-10 flex max-w-lg flex-col items-center text-center text-white">
           <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-[2rem] bg-white/10 text-white backdrop-blur-md border border-white/20 shadow-2xl">
             <Activity className="h-10 w-10" />
           </div>
-          
           <h2 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
             Junte-se à equipe
           </h2>
           <p className="mt-6 text-lg text-slate-300 leading-relaxed">
             Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam molestie est in massa scelerisque, eu luctus urna tristique.
           </p>
-
           <div className="mt-12 grid grid-cols-2 gap-6 text-left w-full">
             <div className="flex items-center gap-4 rounded-2xl bg-white/5 p-4 border border-white/10 backdrop-blur-sm">
               <Stethoscope className="h-8 w-8 text-emerald-400" />
