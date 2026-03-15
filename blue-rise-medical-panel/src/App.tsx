@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Login } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
 import { PrivateRoute } from "./components/PrivateRoute";
+import { Register } from "./pages/Register";
 
 function App() {
   return (
@@ -9,6 +10,7 @@ function App() {
       <Routes>
         {/* public */}
         <Route path="/login" element={<Login />} />
+        <Route path="/cadastro" element={<Register />} />
 
         {/* protected */}
         <Route element={<PrivateRoute />}>
