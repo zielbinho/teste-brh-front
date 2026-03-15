@@ -18,25 +18,25 @@ Aplicação SPA para um painel médico, desenvolvida como resolução do desafio
 ## 💻 Como rodar o projeto localmente
 
 1. Clone este repositório:
-\`\`\`bash
-git clone https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git
-\`\`\`
+```
+bash git clone https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git
+```
 
 2. Acesse a pasta do projeto:
-\`\`\`bash
-cd blue-rise-medical-panel
-\`\`\`
+```
+bash cd blue-rise-medical-panel
+```
 
 3. Instale as dependências:
-\`\`\`bash
-npm install
-\`\`\`
+```
+bash npm install
+```
 
 4. Crie um arquivo `.env` na raiz do projeto e configure as variáveis de ambiente seguindo o arquivo `.env.example`.
 
 5. Inicie o servidor de desenvolvimento:
-\`\`\`bash
-npm run dev
-\`\`\`
+```
+bash npm run dev
+```
 
 6. Acesse `http://localhost:5173` no seu navegador.
