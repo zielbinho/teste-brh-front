@@ -5,6 +5,17 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { api } from "@/services/api";
 import { io } from "socket.io-client";
+import { toast } from "sonner";
+import {
+  Calendar,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  LogOut,
+  FileDown,
+  Activity,
+  AlertCircle,
+} from "lucide-react";
 
 // mock
 type Patient = {
@@ -67,8 +78,9 @@ export function Dashboard() {
 
     // mock a cada 15 seg
     const interval = setInterval(() => {
-      setNotification("Nova consulta agendada!");
-      setTimeout(() => setNotification(null), 5000);
+      toast.info("Nova consulta agendada!", {
+        icon: <Calendar className="w-4 h-4" />,
+      });
     }, 15000);
 
     return () => {
@@ -81,21 +93,20 @@ export function Dashboard() {
     try {
       await api.post("/api/auth/logout");
     } catch (error) {
-      console.error("Erro ao deslogar na API", error);
+      console.error("Erro no logout", error);
     } finally {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
+      toast.success("Você saiu do sistema.");
       navigate("/login");
     }
   };
 
   const exportToPDF = () => {
     if (!patients || patients.length === 0) return;
-
     const doc = new jsPDF();
-
     doc.setFontSize(18);
-    doc.text("Relatório de Consultas - Blue Rise", 14, 22);
+    doc.text("Agenda Médica", 14, 22);
 
     doc.setFontSize(11);
     doc.setTextColor(100);
@@ -109,7 +120,7 @@ export function Dashboard() {
     ]);
 
     autoTable(doc, {
-      startY: 35,
+      startY: 30,
       head: [tableColumn],
       body: tableRows,
       theme: "grid",
@@ -117,109 +128,145 @@ export function Dashboard() {
     });
 
     doc.save("lista_de_pacientes.pdf");
+    toast.success("PDF gerado com sucesso!");
+  };
+
+  const renderStatus = (status: Patient["status"]) => {
+    const statusConfig = {
+      Confirmado: {
+        color: "bg-emerald-100 text-emerald-700 border-emerald-200",
+        icon: <CheckCircle2 className="w-3.5 h-3.5 mr-1" />,
+      },
+      Pendente: {
+        color: "bg-amber-100 text-amber-700 border-amber-200",
+        icon: <Clock className="w-3.5 h-3.5 mr-1" />,
+      },
+      Cancelado: {
+        color: "bg-rose-100 text-rose-700 border-rose-200",
+        icon: <XCircle className="w-3.5 h-3.5 mr-1" />,
+      },
+    };
+
+    const config = statusConfig[status];
+    return (
+      <span
+        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${config.color}`}
+      >
+        {config.icon}
+        {status}
+      </span>
+    );
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
-      {/* notification mock real-time */}
-      {notification && (
-        <div className="fixed bottom-8 right-8 z-50 flex items-center gap-3 rounded-lg bg-slate-900 px-6 py-4 text-white shadow-xl animate-bounce">
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-          </span>
-          <p className="font-medium">{notification}</p>
-        </div>
-      )}
-      <div className="mx-auto max-w-4xl">
-        {/* Cabeçalho Atualizado com o novo botão */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">
-              Painel de Consultas
-            </h1>
-            <p className="text-slate-500">
-              Bem-vindo, Doutor(a). Aqui está sua agenda de hoje.
-            </p>
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8">
+      <div className="mx-auto max-w-5xl">
+        {/* Cabeçalho Moderno */}
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl bg-white p-6 shadow-sm border border-slate-200">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+              <Activity className="h-6 w-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                Painel de Consultas
+              </h1>
+              <p className="text-sm text-slate-500 font-medium">
+                Gerencie sua agenda diária.
+              </p>
+            </div>
           </div>
-          <div className="flex gap-4">
+
+          <div className="flex items-center gap-3">
             {!isLoading && !isError && patients && (
               <button
                 onClick={exportToPDF}
-                className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 transition-colors shadow-sm"
+                className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow transition-colors hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
               >
-                Exportar para PDF
+                <FileDown className="mr-2 h-4 w-4" />
+                Exportar PDF
               </button>
             )}
             <button
               onClick={handleLogout}
-              className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 transition-colors shadow-sm"
+              className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
             >
+              <LogOut className="mr-2 h-4 w-4 text-slate-500" />
               Sair
             </button>
           </div>
         </div>
 
-        {/*query states */}
-
-        {/* loading */}
+        {/* Estados */}
         {isLoading && (
-          <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white p-12 shadow-sm">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900 mb-4"></div>
-            <p className="text-slate-500 font-medium">Buscando pacientes...</p>
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white py-20 shadow-sm">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-100 border-t-blue-600 mb-4"></div>
+            <p className="text-slate-500 font-medium animate-pulse">
+              Carregando prontuários...
+            </p>
           </div>
         )}
 
-        {/* error */}
         {isError && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center text-red-600 shadow-sm">
-            <h3 className="font-bold text-lg mb-1">
-              Ops! Ocorreu um problema.
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 py-16 text-center shadow-sm">
+            <AlertCircle className="h-10 w-10 text-rose-500 mb-3" />
+            <h3 className="font-bold text-lg text-rose-900">
+              Falha na conexão
             </h3>
-            <p>
+            <p className="text-rose-600 mt-1">
               {error instanceof Error ? error.message : "Erro desconhecido."}
             </p>
           </div>
         )}
 
-        {/* sucess */}
+        {/* Tabela Polida */}
         {!isLoading && !isError && patients && (
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-            <table className="w-full text-left text-sm text-slate-600">
-              <thead className="bg-slate-100 uppercase text-slate-700">
-                <tr>
-                  <th className="px-6 py-4 font-semibold">Paciente</th>
-                  <th className="px-6 py-4 font-semibold">Horário</th>
-                  <th className="px-6 py-4 font-semibold">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {patients.map((patient) => (
-                  <tr
-                    key={patient.id}
-                    className="hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 font-medium text-slate-900">
-                      {patient.name}
-                    </td>
-                    <td className="px-6 py-4">{patient.time}</td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                          patient.status === "Confirmado"
-                            ? "bg-emerald-100 text-emerald-700"
-                            : patient.status === "Pendente"
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-rose-100 text-rose-700"
-                        }`}
-                      >
-                        {patient.status}
-                      </span>
-                    </td>
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-slate-50/80 uppercase text-slate-500 border-b border-slate-200">
+                  <tr>
+                    <th className="px-6 py-4 font-semibold tracking-wider">
+                      Paciente
+                    </th>
+                    <th className="px-6 py-4 font-semibold tracking-wider">
+                      Horário
+                    </th>
+                    <th className="px-6 py-4 font-semibold tracking-wider">
+                      Status
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {patients.map((patient) => (
+                    <tr
+                      key={patient.id}
+                      className="hover:bg-slate-50/80 transition-colors group"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs">
+                            {patient.name.charAt(0)}
+                          </div>
+                          <span className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
+                            {patient.name}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600 font-medium">
+                        <div className="flex items-center">
+                          <Clock className="w-4 h-4 mr-2 text-slate-400" />
+                          {patient.time}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {renderStatus(patient.status)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

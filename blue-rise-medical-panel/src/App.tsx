@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "sonner";
 import { Login } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
 import { PrivateRoute } from "./components/PrivateRoute";
@@ -7,6 +8,8 @@ import { Register } from "./pages/Register";
 function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-right" richColors />
+      
       <Routes>
         {/* public */}
         <Route path="/login" element={<Login />} />

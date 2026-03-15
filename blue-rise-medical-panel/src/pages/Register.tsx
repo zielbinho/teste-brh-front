@@ -5,6 +5,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { api } from "@/services/api";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const registerSchema = z.object({
   name: z.string().min(2, "O nome é obrigatório"),
@@ -41,7 +42,7 @@ export function Register() {
         senha: data.password,
       });
 
-      alert("Conta criada com sucesso! Faça login para continuar.");
+      toast.success("Conta criada com sucesso! Faça login para continuar.");
       navigate("/login");
     } catch (error: any) {
       console.error("Erro no cadastro:", error);

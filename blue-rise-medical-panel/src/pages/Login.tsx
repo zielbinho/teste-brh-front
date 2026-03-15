@@ -5,6 +5,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { cn } from "@/lib/utils";
 import { api } from "@/services/api";
+import { toast } from "sonner";
 
 const loginSchema = z.object({
   email: z
@@ -45,7 +46,7 @@ export function Login() {
       navigate("/dashboard");
     } catch (error: any) {
       console.error("Erro no login:", error);
-      alert(
+      toast.error(
         error.response?.data?.error ||
           "Erro ao fazer login. Verifique suas credenciais.",
       );
