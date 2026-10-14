@@ -1,42 +1,84 @@
-# Blue Rise Group - Teste Técnico Front-End
+# Blue Rise Medical Panel
 
-Aplicação SPA para um painel médico, desenvolvida como resolução do desafio técnico da Blue Rise Group. O projeto contempla um fluxo completo de autenticação JWT e um dashboard com listagem de pacientes.
+Aplicação SPA para um painel médico, desenvolvida como resolução do desafio técnico front-end da Blue Rise Group. Contempla um fluxo completo de autenticação JWT (login, cadastro e refresh token) e um dashboard com listagem de pacientes.
 
-🔗 **Link do Deploy:** https://teste-brh-front.vercel.app/
+🔗 **Deploy:** https://teste-brh-front.vercel.app/
 
-## 🚀 Tecnologias Utilizadas
+## ✨ Funcionalidades
+
+- Cadastro e login com autenticação JWT
+- Renovação automática de sessão via refresh token (interceptors do Axios)
+- Rotas privadas protegidas
+- Dashboard com listagem de pacientes
+- Exportação da lista de pacientes para PDF
+- Simulação de notificação em tempo real
+
+## 🚀 Tecnologias utilizadas
+
 - **Core:** React, Vite, TypeScript
 - **Roteamento:** React Router DOM (com proteção de rotas privadas)
 - **Estado/Fetching:** React Query e Axios (com interceptors para Refresh Token)
 - **Formulários:** React Hook Form + Zod
-- **Estilização:** Tailwind CSS + Radix UI (simulando shadcn/ui via `clsx` e `tailwind-merge`)
-- **Diferenciais Implementados:**
-  - Exportação da lista de pacientes para PDF (`jspdf` + `jspdf-autotable`)
-  - Simulação de notificação Real-Time (`socket.io-client`)
+- **Estilização:** Tailwind CSS + Radix UI (padrão shadcn/ui via `clsx` e `tailwind-merge`)
+- **Diferenciais:**
+  - Exportação para PDF (`jspdf` + `jspdf-autotable`)
+  - Notificação em tempo real simulada (`socket.io-client`)
   - Deploy na Vercel
 
-## 💻 Como rodar o projeto localmente
+## 📁 Estrutura
 
-1. Clone este repositório:
+O código da aplicação fica na pasta `blue-rise-medical-panel`:
+
 ```
-bash git clone https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git
+blue-rise-medical-panel/
+├── src/
+│   ├── components/   # PrivateRoute e componentes compartilhados
+│   ├── lib/          # utilitários
+│   ├── pages/        # Login, Register e Dashboard
+│   └── services/     # cliente Axios e chamadas à API
+└── .env.example      # variáveis de ambiente necessárias
+```
+
+## 💻 Como rodar localmente
+
+1. Clone o repositório:
+
+```bash
+git clone https://github.com/zielbinho/teste-brh-front.git
 ```
 
 2. Acesse a pasta do projeto:
-```
-bash cd blue-rise-medical-panel
+
+```bash
+cd teste-brh-front/blue-rise-medical-panel
 ```
 
 3. Instale as dependências:
-```
-bash npm install
+
+```bash
+npm install
 ```
 
-4. Crie um arquivo `.env` na raiz do projeto e configure as variáveis de ambiente seguindo o arquivo `.env.example`.
+4. Crie um arquivo `.env` na raiz da pasta do projeto, a partir do `.env.example`:
+
+```env
+VITE_API_URL=url da api
+VITE_API_KEY=chave da api
+```
 
 5. Inicie o servidor de desenvolvimento:
-```
-bash npm run dev
+
+```bash
+npm run dev
 ```
 
-6. Acesse `http://localhost:5173` no seu navegador.
+6. Acesse `http://localhost:5173` no navegador.
+
+## 📜 Scripts
+
+| Comando           | O que faz                          |
+| ----------------- | ---------------------------------- |
+| `npm run dev`     | Inicia o servidor de desenvolvimento |
+| `npm run build`   | Verifica os tipos e gera o build     |
+| `npm run preview` | Serve o build localmente             |
+| `npm run lint`    | Roda o ESLint                        |
